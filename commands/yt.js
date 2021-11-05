@@ -6,10 +6,13 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('yt')
         .setDescription('play a youtube sound')
-        .addStringOption(option =>
+        .addStringOption(option => 
             option.setName('url')
                 .setDescription('The url to a youtube video')
-                .setRequired(true)),
+                .setRequired(true)
+                .addChoice('Random Shit', 'https://www.youtube.com/watch?v=93-7x5X_FWA')
+        ),
+        
     async execute(interaction) {
         await interaction.deferReply();
         let songUrl = interaction.options.getString('url');

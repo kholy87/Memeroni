@@ -1,6 +1,7 @@
 const path = require('path');
 const {	createAudioPlayer, createAudioResource, joinVoiceChannel, entersState, AudioPlayerStatus, getVoiceConnection } = require('@discordjs/voice');
 const state = require('../shared/state');
+const ytdl = require('ytdl-core');
 
 module.exports = async function playSoundFile(interaction){
     const connection = await joinVoiceChannel({

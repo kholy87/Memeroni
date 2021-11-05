@@ -1,9 +1,4 @@
-const path = require('path');
-const fs = require('fs');
-const ffmetadata = require('ffmetadata');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const {	createAudioPlayer, createAudioResource, joinVoiceChannel, entersState, AudioPlayerStatus, getVoiceConnection } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
 const state = require('../shared/state');
 const playSoundFile = require('../shared/player');
 

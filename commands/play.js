@@ -1,13 +1,6 @@
-const fs = require('fs');
-const ffmetadata = require('ffmetadata');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const state = require('../shared/state');
 const playSoundFile = require('../shared/player');
-const soundFiles = fs.readdirSync('./sounds').filter(file => file.endsWith('.mp3'));
-
-for (const file of soundFiles) {
-    state.sounds.push(file);
-}
 
 module.exports = {
     data: new SlashCommandBuilder()

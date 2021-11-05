@@ -12,6 +12,7 @@ module.exports = async function playSoundFile(interaction){
     const player = createAudioPlayer();
     const audioFile = state.playlist.shift();
     let soundPath = null;
+    console.log(validURL(audioFile));
     if (validURL(audioFile)){
          soundPath = await ytdl(youtubeUrl, {
             filter: 'audioonly'});

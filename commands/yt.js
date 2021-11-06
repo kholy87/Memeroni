@@ -50,11 +50,10 @@ module.exports = {
 	async executeButton(interaction) {
 		const customId = interaction.customId;
 		if (customId === 'stop') {
-			player.stop();
+			player.stop(interaction);
 		}
 		else if (customId === 'skip') {
 			player.skip(interaction);
 		}
-		interaction.reply({ content: `${interaction.user.tag} clicked ${interaction.customId}` });
 	},
 };

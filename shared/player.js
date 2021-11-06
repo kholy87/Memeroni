@@ -53,6 +53,7 @@ const Player = {
 				this.playSoundFile(interaction);
 			}
 		});
+		this.player = player;
 	},
 	stop: function() {
 		if (this.connection !== undefined) {
@@ -60,6 +61,10 @@ const Player = {
 			this.connection.destroy();
 			console.log('stop');
 		}
+	},
+	skip: function(interaction) {
+		this.player.pause();
+		this.playSoundFile(interaction);
 	},
 	validURL: function(str) {
 		const pattern = new RegExp('^(https?:\\/\\/)?' +

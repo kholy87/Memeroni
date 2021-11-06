@@ -37,6 +37,9 @@ module.exports = {
 		if (customId === 'stop') {
 			player.stop();
 		}
+		else if (customId === 'skip') {
+			player.skip(interaction);
+		}
 		interaction.reply({ content: `${interaction.user.tag} clicked ${interaction.customId}` });
 	},
 };

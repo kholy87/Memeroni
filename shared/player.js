@@ -22,7 +22,7 @@ const Player = {
 		else {
 			soundPath = path.resolve('./sounds/' + audioFile);
 		}
-
+		state.currentSong = soundPath;
 		const resource = createAudioResource(soundPath, {
 			inlineVolume: true,
 			metadata:{
@@ -55,15 +55,16 @@ const Player = {
 		});
 		this.player = player;
 	},
-	stop: function() {
+	stop: function(interaction) {
 		if (this.connection !== undefined) {
 			state.isPlaying = false;
 			this.connection.destroy();
-			console.log('stop');
+			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
 		}
 	},
 	skip: function(interaction) {
 		this.player.pause();
+		interaction.reply({ content: `${interaction.user.tag} has skipped ${state.currentSong}` });
 		this.playSoundFile(interaction);
 	},
 	validURL: function(str) {

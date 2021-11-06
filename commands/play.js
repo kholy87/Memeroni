@@ -14,13 +14,11 @@ module.exports = {
 			return option;
 		}),
 	async execute(interaction) {
-		await interaction.deferReply();
 		const meme = interaction.options.getString('meme');
 		state.playlist.push(meme);
 		if (!state.isPlaying) {
 			player.playSoundFile(interaction);
 		}
-		await interaction.followUp('Now playing!');
-		setTimeout(() => interaction.deleteReply(), 1000);
+		await interaction.reply({ content: `You've added ${meme} to the playlist`, ephemeral: true });
 	},
 };

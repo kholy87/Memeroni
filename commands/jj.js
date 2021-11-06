@@ -1,5 +1,13 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const {	joinVoiceChannel, createAudioPlayer, createAudioResource, entersState, AudioPlayerStatus } = require('@discordjs/voice');
+const {
+	SlashCommandBuilder,
+} = require('@discordjs/builders');
+const {
+	joinVoiceChannel,
+	createAudioPlayer,
+	createAudioResource,
+	entersState,
+	AudioPlayerStatus,
+} = require('@discordjs/voice');
 const state = require('../shared/state');
 const playSoundFile = require('../shared/player');
 
@@ -9,12 +17,31 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('jj')
 		.setDescription('you know whats up')
-		.addStringOption(option =>
-			option.setName('what')
-				.setDescription('The url to a youtube video')
-				.setRequired(true)
-				.addChoice('Swifty', 'idontknow'),
-		),
+	/* .addStringOption(option =>
+        	option.setName('what')
+        		.setDescription('The url to a youtube video')
+        		.setRequired(false)
+        		.addChoice('Play', 'Swifty')
+        		.addChoice('Words', 'idontknow'),
+        )*/
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('ears')
+				.setDescription('Feed your ears')
+				.addStringOption(option =>
+					option.setName('what')
+						.setDescription('What are you putting in your ears')
+						.setRequired(false)
+						.addChoice('Swifty', 's')
+						.addChoice('Dems', 'd'),
+				),
+		)
+
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('eyes')
+				.setDescription('Shove it in your eyes')),
+
 
 	async execute(interaction) {
 
@@ -24,38 +51,75 @@ module.exports = {
 
 		await interaction.deferReply();
 
+		// const what = interaction.options.getString('what');
+		const subcommand = interaction.options._subcommand;
+		if (subcommand === undefined) {
+			await interaction.reply({
+				content: 'You didnt select a subcommand idiot',
+				ephemeral: true,
+			});
+		}
+
+		/*
+		await interaction.reply({
+			content: 'I logged words',
+			ephemeral: true,
+		});
+		*/
+
+
 		const connection = await joinVoiceChannel({
 			channelId: interaction.member.voice.channel.id,
 			guildId: interaction.guildId,
 			adapterCreator: interaction.guild.voiceAdapterCreator,
 		});
-		const player = createAudioPlayer();
-		const resource = createAudioResource(path, {
-			inlineVolume: true,
-			metadata:{
-				title: 'title',
-			},
-		});
-		player.play(resource);
-		try {
-			await entersState(player, AudioPlayerStatus.Playing, 5000);
-			console.log('playback started');
+
+		if (subcommand === 'ears') {
+			sound();
 		}
-		catch (error) {
-			console.log(error);
+		else if (subcommand === 'eyes') {
+			light();
 		}
-		connection.subscribe(player);
-		await interaction.followUp('Now twiddling my thumbs!');
-		setTimeout(() => interaction.deleteReply(), 1000);
-		player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
-		player.on(AudioPlayerStatus.Idle, () => {
-			if (state.playlist.length === 0) {
-				state.isPlaying = false;
-				connection.destroy();
+
+
+		async function sound() {
+			const player = createAudioPlayer();
+			const resource = createAudioResource(path, {
+				inlineVolume: true,
+				metadata: {
+					title: 'title',
+				},
+			});
+			player.play(resource);
+			try {
+				await entersState(player, AudioPlayerStatus.Playing, 5000);
+				console.log('playback started');
 			}
-			else {
-				playSoundFile(interaction);
+			catch (error) {
+				console.log(error);
 			}
-		});
+			connection.subscribe(player);
+			await interaction.followUp('Now twiddling my thumbs!');
+			setTimeout(() => interaction.deleteReply(), 1000);
+			player.on('stateChange', (os, ns) => {
+				console.log(`${os.status} -----> ${ns.status}`);
+			});
+			player.on(AudioPlayerStatus.Idle, () => {
+				if (state.playlist.length === 0) {
+					state.isPlaying = false;
+					connection.destroy();
+				}
+				else {
+					playSoundFile(interaction);
+				}
+			});
+
+		}
+
+		function light() {
+			interaction.followUp('BLinkingText');
+		}
+
+
 	},
 };

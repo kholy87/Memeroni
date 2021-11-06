@@ -29,9 +29,9 @@ module.exports = {
 				.setName('ears')
 				.setDescription('Feed your ears')
 				.addStringOption(option =>
-					option.setName('what')
+					option.setName('whom')
 						.setDescription('What are you putting in your ears')
-						.setRequired(false)
+						.setRequired(true)
 						.addChoice('Swifty', 's')
 						.addChoice('Dems', 'd'),
 				),
@@ -45,8 +45,9 @@ module.exports = {
 
 	async execute(interaction) {
 
-		// const path = 'https://cdn.discordapp.com/attachments/170668549042339840/906370563289808996/Taylor_Swift_-_Shake_It_Off.mp3';
-		const path = 'https://cdn.discordapp.com/attachments/170668549042339840/906392072938987591/Taylor_Swift_-_I_knew_you_were_trouble.mp3';
+		const s = 'https://cdn.discordapp.com/attachments/170668549042339840/906370563289808996/Taylor_Swift_-_Shake_It_Off.mp3';
+		// const path = 'https://cdn.discordapp.com/attachments/170668549042339840/906392072938987591/Taylor_Swift_-_I_knew_you_were_trouble.mp3';
+		const d = 'https://cdn.discordapp.com/attachments/758325305823461417/906422072757067776/demilovato_-_confident.mp3';
 
 
 		await interaction.deferReply();
@@ -83,8 +84,19 @@ module.exports = {
 
 
 		async function sound() {
+
+			interaction.followUp({ content:'Sound Blasting', ephemeral:true });
+			const what = interaction.options.getString('what');
+			let songPath = null;
+			if (what === 's') {
+				songPath = s;
+			}
+			else if (what === 'd') {
+				songPath = d;
+			}
 			const player = createAudioPlayer();
-			const resource = createAudioResource(path, {
+
+			const resource = createAudioResource(songPath, {
 				inlineVolume: true,
 				metadata: {
 					title: 'title',
@@ -99,7 +111,7 @@ module.exports = {
 				console.log(error);
 			}
 			connection.subscribe(player);
-			await interaction.followUp('Now twiddling my thumbs!');
+			await interaction.followUp({ content:'Sound Blasting', ephemeral:true });
 			setTimeout(() => interaction.deleteReply(), 1000);
 			player.on('stateChange', (os, ns) => {
 				console.log(`${os.status} -----> ${ns.status}`);

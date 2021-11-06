@@ -3,63 +3,73 @@ const {	createAudioPlayer, createAudioResource, joinVoiceChannel, entersState, A
 const state = require('../shared/state');
 const ytdl = require('ytdl-core');
 
-module.exports = async function playSoundFile(interaction) {
-	const connection = joinVoiceChannel({
-		channelId: interaction.member.voice.channel.id,
-		guildId: interaction.guildId,
-		adapterCreator: interaction.guild.voiceAdapterCreator,
-	});
-	state.isPlaying = true;
-	const player = createAudioPlayer();
-	const audioFile = state.playlist.shift();
-	let soundPath = null;
-	if (validURL(audioFile)) {
-		soundPath = ytdl(audioFile, {
-			filter: 'audioonly',
+const Player = {
+	playSoundFile: async function(interaction) {
+		this.connection = joinVoiceChannel({
+			channelId: interaction.member.voice.channel.id,
+			guildId: interaction.guildId,
+			adapterCreator: interaction.guild.voiceAdapterCreator,
 		});
-	}
-	else {
-		soundPath = path.resolve('./sounds/' + audioFile);
-	}
-
-	const resource = createAudioResource(soundPath, {
-		inlineVolume: true,
-		metadata:{
-			title: 'title',
-		},
-	});
-	resource.volume.setVolume(0.2);
-	async function start() {
-		player.play(resource);
-		try {
-			await entersState(player, AudioPlayerStatus.Playing, 5000);
-			console.log('playback started');
-		}
-		catch (error) {
-			console.log(error);
-		}
-
-	}
-	void start();
-	connection.subscribe(player);
-	player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
-	player.on(AudioPlayerStatus.Idle, () => {
-		if (state.playlist.length === 0) {
-			state.isPlaying = false;
-			connection.destroy();
+		state.isPlaying = true;
+		const player = createAudioPlayer();
+		const audioFile = state.playlist.shift();
+		let soundPath = null;
+		if (this.validURL(audioFile)) {
+			soundPath = ytdl(audioFile, {
+				filter: 'audioonly',
+			});
 		}
 		else {
-			playSoundFile(interaction);
+			soundPath = path.resolve('./sounds/' + audioFile);
 		}
-	});
+
+		const resource = createAudioResource(soundPath, {
+			inlineVolume: true,
+			metadata:{
+				title: 'title',
+			},
+		});
+		resource.volume.setVolume(0.2);
+		async function start() {
+			player.play(resource);
+			try {
+				await entersState(player, AudioPlayerStatus.Playing, 5000);
+				console.log('playback started');
+			}
+			catch (error) {
+				console.log(error);
+			}
+
+		}
+		void start();
+		this.connection.subscribe(player);
+		player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
+		player.on(AudioPlayerStatus.Idle, () => {
+			if (state.playlist.length === 0) {
+				state.isPlaying = false;
+				this.connection.destroy();
+			}
+			else {
+				this.playSoundFile(interaction);
+			}
+		});
+	},
+	stop: function() {
+		if (this.connection !== undefined) {
+			state.isPlaying = false;
+			this.connection.destroy();
+			console.log('stop');
+		}
+	},
+	validURL: function(str) {
+		const pattern = new RegExp('^(https?:\\/\\/)?' +
+			'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
+			'((\\d{1,3}\\.){3}\\d{1,3}))' +
+			'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
+			'(\\?[;&a-z\\d%_.~+=-]*)?' +
+			'(\\#[-a-z\\d_]*)?$', 'i');
+		return !!pattern.test(str);
+	},
 };
 
-function validURL(str) {
-	const pattern = new RegExp('^(https?:\\/\\/)?' +
-      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
-      '((\\d{1,3}\\.){3}\\d{1,3}))' +
-      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
-      '(\\?[;&a-z\\d%_.~+=-]*)?' +
-      '(\\#[-a-z\\d_]*)?$', 'i');
-	return !!pattern.test(str);
-}
+module.exports = Player;

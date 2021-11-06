@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { MessageActionRow, MessageButton } = require('discord.js');
 const state = require('../shared/state');
-const playSoundFile = require('../shared/player');
+const player = require('../shared/player');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -15,9 +16,27 @@ module.exports = {
 		const songUrl = interaction.options.getString('url');
 		state.playlist.push(songUrl);
 		if (!state.isPlaying) {
-			playSoundFile(interaction);
+			player.playSoundFile(interaction);
 		}
-		await interaction.followUp('Now playing!');
-		setTimeout(() => interaction.deleteReply(), 1000);
+		const row = new MessageActionRow()
+			.addComponents(
+				new MessageButton()
+					.setCustomId('stop')
+					.setLabel('Stop')
+					.setStyle('DANGER'),
+				new MessageButton()
+					.setCustomId('skip')
+					.setLabel('Skip')
+					.setStyle('PRIMARY'),
+			);
+		await interaction.followUp({ content: 'Now playing!', components: [row] });
+		// setTimeout(() => interaction.deleteReply(), 1000);
+	},
+	async executeButton(interaction) {
+		const customId = interaction.customId;
+		if (customId === 'stop') {
+			player.stop();
+		}
+		interaction.reply({ content: `${interaction.user.tag} clicked ${interaction.customId}` });
 	},
 };

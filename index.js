@@ -29,18 +29,30 @@ for (const file of commandFiles) {
 
 // Reply to slash commands
 client.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-
-	const command = client.commands.get(interaction.commandName);
-
-	if (!command) return;
-
-	try {
-		await command.execute(interaction);
+	if (interaction.isButton()) {
+		console.log(interaction);
+		const command = client.commands.get(interaction.message.interaction.commandName);
+		if (!command) return;
+		try {
+			await command.executeButton(interaction);
+		}
+		catch (error) {
+			console.error(error);
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+		}
 	}
-	catch (error) {
-		console.error(error);
-		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+	if (interaction.isCommand()) {
+		const command = client.commands.get(interaction.commandName);
+
+		if (!command) return;
+
+		try {
+			await command.execute(interaction);
+		}
+		catch (error) {
+			console.error(error);
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+		}
 	}
 });
 

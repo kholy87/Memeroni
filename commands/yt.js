@@ -26,7 +26,6 @@ module.exports = {
 			duration: songData.videoDetails.duration,
 			thumbnail: songData.videoDetails.thumbnails[0].url,
 		};
-		console.log(songData, song);
 		const row = new MessageActionRow()
 			.addComponents(
 				new MessageButton()
@@ -47,7 +46,6 @@ module.exports = {
 			.setTimestamp()
 			.setFooter('Memeroni', 'https://i.imgur.com/qyK1FJF.png');
 		await interaction.reply({ embeds: [exampleEmbed], components: [row] });
-		// setTimeout(() => interaction.deleteReply(), 1000);
 	},
 	async executeButton(interaction) {
 		const customId = interaction.customId;

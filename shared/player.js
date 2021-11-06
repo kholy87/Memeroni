@@ -24,7 +24,7 @@ module.exports = async function playSoundFile(interaction){
         inlineVolume: true,
         metadata:{
             title: 'title',
-        }
+        },
     });
     async function start(){
         player.play(resource);

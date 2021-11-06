@@ -16,6 +16,6 @@ module.exports = {
         .setName('help')
         .setDescription('Get a list of the memes'),
     async execute(interaction) {
-      interaction.reply({ content: 'Here are the commands', ephemeral: true });
+        interaction.reply({ content: 'Here are the commands', ephemeral: true });
     },
 };

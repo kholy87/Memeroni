@@ -7,7 +7,7 @@ const PlayerUtils = require('../shared/playerUtils');
 const volume = 0.2;
 
 const Player = {
-	startPlayer: async function(interaction) {
+	start: async function(interaction) {
 		this.connection = joinVoiceChannel({
 			channelId: interaction.member.voice.channel.id,
 			guildId: interaction.guildId,
@@ -18,7 +18,7 @@ const Player = {
 	playSoundFile: async function(interaction, isAlreadyPlaying = true) {
 		if (this.connection === undefined) this.startPlayer(interaction);
 		state.isPlaying = true;
-		const player = createAudioPlayer();
+		this.player = createAudioPlayer();
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
 		let isMeme = false;
@@ -46,9 +46,9 @@ const Player = {
 		});
 		if (!isAlreadyPlaying) this.resource.volume.setVolume(0.0001);
 		if (isMeme) this.resource.volume.setVolume(volume * 1.5);
-		this.connection.subscribe(player);
-		player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
-		player.on(AudioPlayerStatus.Idle, () => {
+		this.connection.subscribe(this.player);
+		this.player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
+		this.player.on(AudioPlayerStatus.Idle, () => {
 			if (state.playlist.length === 0) {
 				state.isPlaying = false;
 				this.connection.destroy();
@@ -57,10 +57,9 @@ const Player = {
 				this.playSoundFile(interaction);
 			}
 		});
-		this.player = player;
-		this.start();
+		this.startPlayer();
 	},
-	start: async function() {
+	startPlayer: async function() {
 		this.player.play(this.resource);
 		try {
 			await entersState(this.player, AudioPlayerStatus.Playing, 5000);

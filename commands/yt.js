@@ -16,7 +16,7 @@ module.exports = {
 		const songUrl = interaction.options.getString('url');
 		state.playlist.push(songUrl);
 		if (!state.isPlaying) {
-			player.startPlayer(interaction);
+			player.start(interaction);
 		}
 		const songData = await ytdl.getInfo(songUrl);
 		const song = {

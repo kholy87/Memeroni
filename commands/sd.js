@@ -17,7 +17,7 @@ module.exports = {
 		const meme = interaction.options.getString('meme');
 		state.playlist.push(meme);
 		if (!state.isPlaying) {
-			player.startPlayer(interaction);
+			player.start(interaction);
 		}
 		await interaction.reply({ content: `You've added ${meme} to the playlist`, ephemeral: true });
 	},

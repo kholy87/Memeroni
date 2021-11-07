@@ -2,6 +2,9 @@ const path = require('path');
 const {	createAudioPlayer, createAudioResource, joinVoiceChannel, entersState, AudioPlayerStatus } = require('@discordjs/voice');
 const state = require('../shared/state');
 const ytdl = require('ytdl-core');
+const PlayerUtils = require('../shared/playerUtils');
+
+let resource = null;
 
 const Player = {
 	playSoundFile: async function(interaction) {
@@ -14,19 +17,19 @@ const Player = {
 		const player = createAudioPlayer();
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
-		if ((audioFile.indexOf('youtu') > 0) && this.validURL(audioFile)) {
+		if ((audioFile.indexOf('youtu') > 0) && PlayerUtils.validURL(audioFile)) {
 			soundPath = ytdl(audioFile, {
 				filter: 'audioonly',
 			});
 		}
-		else if (this.validURL(audioFile)) {
-			soundPath = path.resolve(audioFile);
+		else if (PlayerUtils.validURL(audioFile)) {
+			soundPath = audioFile;
 		}
 		else {
 			soundPath = path.resolve('./sounds/' + audioFile);
 		}
 		state.currentSong = soundPath;
-		const resource = createAudioResource(soundPath, {
+		resource = createAudioResource(soundPath, {
 			inlineVolume: true,
 			metadata:{
 				title: 'title',
@@ -65,19 +68,30 @@ const Player = {
 			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
 		}
 	},
+	fadeOut: async function(interaction) {
+		if (this.connection !== undefined) {
+			// console.log(resource.volume.volume);
+			do {
+				await PlayerUtils.wait(25);
+				resource.volume.setVolume(resource.volume.volume * 0.9);
+				// console.log(resource.volume.volume);
+			} while (resource.volume.volume > 0.0001);
+
+			state.isPlaying = false;
+			this.connection.destroy();
+			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
+
+
+		}
+	},
+	resume: function(interaction) {
+		interaction.reply({ content: `${interaction.user.tag} has resumed ${state.currentSong}` });
+		this.playSoundFile(interaction);
+	},
 	skip: function(interaction) {
 		this.player.pause();
 		interaction.reply({ content: `${interaction.user.tag} has skipped ${state.currentSong}` });
 		this.playSoundFile(interaction);
-	},
-	validURL: function(str) {
-		const pattern = new RegExp('^(https?:\\/\\/)?' +
-			'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
-			'((\\d{1,3}\\.){3}\\d{1,3}))' +
-			'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
-			'(\\?[;&a-z\\d%_.~+=-]*)?' +
-			'(\\#[-a-z\\d_]*)?$', 'i');
-		return !!pattern.test(str);
 	},
 };
 

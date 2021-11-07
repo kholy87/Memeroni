@@ -9,7 +9,7 @@ const {
 	AudioPlayerStatus,
 } = require('@discordjs/voice');
 const state = require('../shared/state');
-const playSoundFile = require('../shared/player');
+const player = require('../shared/player');
 
 module.exports = {
 
@@ -33,7 +33,9 @@ module.exports = {
 						.setDescription('What are you putting in your ears')
 						.setRequired(true)
 						.addChoice('Swifty', 's')
-						.addChoice('Dems', 'd'),
+						.addChoice('Dems', 'd')
+						.addChoice('Jessy', 'j')
+					,
 				),
 		)
 
@@ -48,9 +50,9 @@ module.exports = {
 		const s = 'https://cdn.discordapp.com/attachments/170668549042339840/906370563289808996/Taylor_Swift_-_Shake_It_Off.mp3';
 		// const path = 'https://cdn.discordapp.com/attachments/170668549042339840/906392072938987591/Taylor_Swift_-_I_knew_you_were_trouble.mp3';
 		const d = 'https://cdn.discordapp.com/attachments/758325305823461417/906422072757067776/demilovato_-_confident.mp3';
+		const j = 'https://cdn.discordapp.com/attachments/758325305823461417/906695643920207912/Jessica_Simpson_-_These_Boots_Are_Made_for_Walkin.mp3';
 
-
-		await interaction.deferReply();
+		// await interaction.deferReply();
 
 		// const what = interaction.options.getString('what');
 		const subcommand = interaction.options._subcommand;
@@ -68,15 +70,32 @@ module.exports = {
 		});
 		*/
 
-
+		/*
 		const connection = await joinVoiceChannel({
-			channelId: interaction.member.voice.channel.id,
+			channelId: interaction.channelID,
 			guildId: interaction.guildId,
 			adapterCreator: interaction.guild.voiceAdapterCreator,
 		});
-
+*/
 		if (subcommand === 'ears') {
-			sound();
+			// sound();
+			const what = interaction.options.getString('whom');
+			let songPath = null;
+			if (what === 's') {
+				songPath = s;
+			}
+			else if (what === 'd') {
+				songPath = d;
+			}
+			else if (what === 'j') {
+				songPath = j;
+			}
+
+			state.playlist.push(songPath);
+			if (!state.isPlaying) {
+				player.playSoundFile(interaction);
+			}
+			await interaction.reply({ content: `You've added ${songPath.split('/')[songPath.split('/').length - 1]} to the playlist`, ephemeral: true });
 		}
 		else if (subcommand === 'eyes') {
 			light();
@@ -85,7 +104,7 @@ module.exports = {
 
 		async function sound() {
 
-			interaction.followUp({ content:'Sound Blasting', ephemeral:true });
+			interaction.followUp({ content:'Revving up', ephemeral:true });
 			const what = interaction.options.getString('what');
 			let songPath = null;
 			if (what === 's') {
@@ -102,6 +121,7 @@ module.exports = {
 					title: 'title',
 				},
 			});
+
 			player.play(resource);
 			try {
 				await entersState(player, AudioPlayerStatus.Playing, 5000);
@@ -131,7 +151,6 @@ module.exports = {
 		function light() {
 			interaction.followUp('BLinkingText');
 		}
-
 
 	},
 };

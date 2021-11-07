@@ -14,10 +14,13 @@ const Player = {
 		const player = createAudioPlayer();
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
-		if (this.validURL(audioFile)) {
+		if (audioFile.indexOf('youtu') > 0) {
 			soundPath = ytdl(audioFile, {
 				filter: 'audioonly',
 			});
+		}
+		else if (this.validURL(audioFile)) {
+			soundPath = path.resolve(audioFile);
 		}
 		else {
 			soundPath = path.resolve('./sounds/' + audioFile);

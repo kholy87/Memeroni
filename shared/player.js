@@ -14,7 +14,7 @@ const Player = {
 		const player = createAudioPlayer();
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
-		if (audioFile.indexOf('youtu') > 0) {
+		if ((audioFile.indexOf('youtu') > 0) && this.validURL(audioFile)) {
 			soundPath = ytdl(audioFile, {
 				filter: 'audioonly',
 			});

@@ -22,7 +22,7 @@ const Player = {
 		else {
 			soundPath = path.resolve('./sounds/' + audioFile);
 		}
-		state.currentSong = soundPath;
+		state.currentSong = audioFile;
 		const resource = createAudioResource(soundPath, {
 			inlineVolume: true,
 			metadata:{
@@ -66,6 +66,17 @@ const Player = {
 		this.player.pause();
 		interaction.reply({ content: `${interaction.user.tag} has skipped ${state.currentSong}` });
 		this.playSoundFile(interaction);
+	},
+	getSongInfo: async function(songUrl) {
+		const songData = await ytdl.getInfo(songUrl);
+		const songInfo = {
+			title: songData.videoDetails.title,
+			description: songData.videoDetails.shortDescription,
+			url: songData.videoDetails.video_url,
+			duration: songData.videoDetails.duration,
+			thumbnail: songData.videoDetails.thumbnails[0].url,
+		};
+		return songInfo;
 	},
 	validURL: function(str) {
 		const pattern = new RegExp('^(https?:\\/\\/)?' +

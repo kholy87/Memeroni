@@ -16,7 +16,7 @@ module.exports = {
 		const songUrl = interaction.options.getString('url');
 		state.playlist.push(songUrl);
 		if (!state.isPlaying) {
-			player.playSoundFile(interaction);
+			player.startPlayer(interaction);
 		}
 		const songData = await ytdl.getInfo(songUrl);
 		const song = {
@@ -36,6 +36,10 @@ module.exports = {
 					.setCustomId('skip')
 					.setLabel('Skip')
 					.setStyle('PRIMARY'),
+				new MessageButton()
+					.setCustomId('resume')
+					.setLabel('Resume')
+					.setStyle('SUCCESS'),
 			);
 		const exampleEmbed = new MessageEmbed()
 			.setColor('#0099ff')
@@ -54,6 +58,9 @@ module.exports = {
 		}
 		else if (customId === 'skip') {
 			player.skip(interaction);
+		}
+		else if (customId === 'resume') {
+			player.resume(interaction);
 		}
 	},
 };

@@ -2,46 +2,50 @@ const path = require('path');
 const {	createAudioPlayer, createAudioResource, joinVoiceChannel, entersState, AudioPlayerStatus } = require('@discordjs/voice');
 const state = require('../shared/state');
 const ytdl = require('ytdl-core');
+const PlayerUtils = require('../shared/playerUtils');
+
+const volume = 0.2;
 
 const Player = {
-	playSoundFile: async function(interaction) {
+	startPlayer: async function(interaction) {
 		this.connection = joinVoiceChannel({
 			channelId: interaction.member.voice.channel.id,
 			guildId: interaction.guildId,
 			adapterCreator: interaction.guild.voiceAdapterCreator,
 		});
+		this.playSoundFile(interaction, false);
+	},
+	playSoundFile: async function(interaction, isAlreadyPlaying = true) {
+		if (this.connection === undefined) this.startPlayer(interaction);
 		state.isPlaying = true;
 		const player = createAudioPlayer();
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
-		if (this.validURL(audioFile)) {
+		let isMeme = false;
+
+		if ((audioFile.indexOf('youtu') > 0) && PlayerUtils.validURL(audioFile)) {
+			soundPath = ytdl(audioFile, {
+				filter: 'audioonly',
+			});
+		}
+		else if (PlayerUtils.validURL(audioFile)) {
 			soundPath = ytdl(audioFile, {
 				filter: 'audioonly',
 			});
 		}
 		else {
 			soundPath = path.resolve('./sounds/' + audioFile);
+			isMeme = true;
 		}
 		state.currentSong = audioFile;
-		const resource = createAudioResource(soundPath, {
+		this.resource = createAudioResource(soundPath, {
 			inlineVolume: true,
 			metadata:{
 				title: 'title',
 			},
 		});
-		resource.volume.setVolume(0.2);
-		async function start() {
-			player.play(resource);
-			try {
-				await entersState(player, AudioPlayerStatus.Playing, 5000);
-				console.log('playback started');
-			}
-			catch (error) {
-				console.log(error);
-			}
-
-		}
-		void start();
+		if (!isAlreadyPlaying) this.resource.volume.setVolume(0.0001);
+		if (isMeme) this.resource.volume.setVolume(volume * 1.5);
 		this.connection.subscribe(player);
 		player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
 		player.on(AudioPlayerStatus.Idle, () => {
@@ -54,12 +58,25 @@ const Player = {
 			}
 		});
 		this.player = player;
+		this.start();
 	},
-	stop: function(interaction) {
+	start: async function() {
+		this.player.play(this.resource);
+		try {
+			await entersState(this.player, AudioPlayerStatus.Playing, 5000);
+			await this.fade();
+		}
+		catch (error) {
+			console.log(error);
+		}
+
+	},
+	stop: async function(interaction) {
 		if (this.connection !== undefined) {
+			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
+			await this.fade(false);
 			state.isPlaying = false;
 			this.connection.destroy();
-			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
 		}
 	},
 	skip: function(interaction) {
@@ -78,14 +95,27 @@ const Player = {
 		};
 		return songInfo;
 	},
-	validURL: function(str) {
-		const pattern = new RegExp('^(https?:\\/\\/)?' +
-			'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
-			'((\\d{1,3}\\.){3}\\d{1,3}))' +
-			'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
-			'(\\?[;&a-z\\d%_.~+=-]*)?' +
-			'(\\#[-a-z\\d_]*)?$', 'i');
-		return !!pattern.test(str);
+	fade: async function(isFadeIn = true) {
+		if (this.connection !== undefined) {
+			if (isFadeIn) {
+				do {
+					await PlayerUtils.wait(25);
+					this.resource.volume.setVolume(this.resource.volume.volume * 1.05);
+					console.log(this.resource.volume.volume);
+				} while (this.resource.volume.volume < volume);
+			}
+			else {
+				do {
+					await PlayerUtils.wait(25);
+					this.resource.volume.setVolume(this.resource.volume.volume * 0.95);
+					console.log(this.resource.volume.volume);
+				} while (this.resource.volume.volume > 0.0001);
+			}
+		}
+	},
+	resume: async function(interaction) {
+		interaction.reply({ content: `${interaction.user.tag} has resumed ${state.currentSong}` });
+		this.playSoundFile(interaction, false);
 	},
 };
 

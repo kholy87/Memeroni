@@ -30,7 +30,6 @@ for (const file of commandFiles) {
 // Reply to slash commands
 client.on('interactionCreate', async interaction => {
 	if (interaction.isButton()) {
-		console.log(interaction);
 		const command = client.commands.get(interaction.message.interaction.commandName);
 		if (!command) return;
 		try {

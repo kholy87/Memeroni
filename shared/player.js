@@ -114,6 +114,10 @@ const Player = {
 		}
 	},
 	resume: async function(interaction) {
+		if (state.playlist.length === 0) {
+			interaction.reply({ content: 'There are no queue in the playlist currently. use /yt or /sd to add to the playlist.' });
+			return;
+		}
 		interaction.reply({ content: `${interaction.user.tag} has resumed ${state.currentSong}` });
 		this.playSoundFile(interaction, false);
 	},

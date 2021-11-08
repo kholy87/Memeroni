@@ -3,7 +3,7 @@ const {
 } = require('@discordjs/builders');
 const state = require('../shared/state');
 const player = require('../shared/player');
-const { mongoUser, mongoPassword } = require('./config.json');
+const { mongoUser, mongoPassword } = require('../config.json');
 
 module.exports = {
 
@@ -103,22 +103,26 @@ module.exports = {
 			interaction.followUp('BLinkingText');
 		}
 
-		function spit() {
-			interaction.followUp('Pewt Pewt');
+		async function spit() {
+
+
+			/*
+ * Requires the MongoDB Node.js Driver
+ * https://mongodb.github.io/node-mongodb-native
+ */
+			// connect to your cluster
 			const { MongoClient } = require('mongodb');
-			const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net/Bot?retryWrites=true&w=majority`;
+			// const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net/Bot?retryWrites=true&w=majority`;
+			const uri = `mongodb://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
 			const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-			client.connect(err => {
-
-				const collection = client.db('Bot').collection('Music');
-				collection.find().toArray(function(err, docs) {
-					console.log(JSON.stringify(docs));
-				});
-				// perform actions on the collection object
-				client.close();
-
-			});
-
+			// specify the DB's name
+			const db = client.db('Bot');
+			// execute find query
+			const items = await db.collection('Music').find({}).toArray();
+			console.log(items);
+			interaction.reply(items);
+			// close connection
+			client.close();
 
 		}
 

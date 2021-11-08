@@ -3,6 +3,7 @@ const {
 } = require('@discordjs/builders');
 const state = require('../shared/state');
 const player = require('../shared/player');
+const { mongoUser, mongoPassword } = require('./config.json');
 
 module.exports = {
 
@@ -87,7 +88,8 @@ module.exports = {
 			}
 		}
 		else if (subcommand === 'eyes') {
-			light();
+			spit();
+			// light();
 		}
 
 		async function simpleSound(songPath) {
@@ -99,6 +101,25 @@ module.exports = {
 
 		function light() {
 			interaction.followUp('BLinkingText');
+		}
+
+		function spit() {
+			interaction.followUp('Pewt Pewt');
+			const { MongoClient } = require('mongodb');
+			const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net/Bot?retryWrites=true&w=majority`;
+			const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+			client.connect(err => {
+
+				const collection = client.db('Bot').collection('Music');
+				collection.find().toArray(function(err, docs) {
+					console.log(JSON.stringify(docs));
+				});
+				// perform actions on the collection object
+				client.close();
+
+			});
+
+
 		}
 
 	},

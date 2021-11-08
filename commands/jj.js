@@ -3,7 +3,10 @@ const {
 } = require('@discordjs/builders');
 const state = require('../shared/state');
 const player = require('../shared/player');
-const { mongoUser, mongoPassword } = require('../config.json');
+const {
+	mongoUser,
+	mongoPassword,
+} = require('../config.json');
 
 module.exports = {
 
@@ -84,7 +87,10 @@ module.exports = {
 				}
 
 				simpleSound(songPath);
-				await interaction.reply({ content: `You've added ${songPath.split('/')[songPath.split('/').length - 1]} to the playlist`, ephemeral: true });
+				await interaction.reply({
+					content: `You've added ${songPath.split('/')[songPath.split('/').length - 1]} to the playlist`,
+					ephemeral: true,
+				});
 			}
 		}
 		else if (subcommand === 'eyes') {
@@ -104,17 +110,12 @@ module.exports = {
 		}
 
 		async function spit() {
-
-
 			/*
- * Requires the MongoDB Node.js Driver
- * https://mongodb.github.io/node-mongodb-native
- */
 			// connect to your cluster
-			const { MongoClient } = require('mongodb');
+			const { MongoClient } = require('mongodb').MongoClient;
 			// const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net/Bot?retryWrites=true&w=majority`;
 			const uri = `mongodb://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
-			const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+			const client = MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true },);
 			// specify the DB's name
 			const db = client.db('Bot');
 			// execute find query
@@ -123,7 +124,50 @@ module.exports = {
 			interaction.reply(items);
 			// close connection
 			client.close();
+*/
+			/*
+			 * Requires the MongoDB Node.js Driver
+			 * https://mongodb.github.io/node-mongodb-native
+			 */
 
+			const filter = {};
+			const {
+				MongoClient,
+			} = require('mongodb');
+			const uri = 'mongodb://dbUser:RPJ4Mr97o6ej3eVU@cluster0-shard-00-02.smyk6.mongodb.net:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true';
+			const client = new MongoClient(uri);
+			try {
+				await client.connect();
+				const database = client.db('Bot');
+				const music = database.collection('Music');
+				const query = {};
+				const options = {
+					// sort returned documents in ascending order by title (A->Z)
+					sort: {
+						title: 1,
+					},
+					// Include only the `title` and `imdb` fields in each returned document
+					// projection: { _id: 0, title: 1, imdb: 1 },
+				};
+				const cursor = music.find(query, options);
+				// print a message if no documents were found
+				if ((await cursor.count()) === 0) {
+					console.log('No documents found!');
+					interaction.reply('No documents found!');
+				}
+
+				interaction.reply('All musics: ' + JSON.stringify(await cursor.toArray()));
+				// interaction.reply('Number of musics: ' + await cursor.count());
+
+
+			}
+			catch (e) {
+				interaction.reply('not what you wanted: ' + e);
+			}
+			finally {
+
+				await client.close();
+			}
 		}
 
 	},

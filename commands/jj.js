@@ -6,6 +6,7 @@ const player = require('../shared/player');
 const {
 	mongoUser,
 	mongoPassword,
+	mongoCluster,
 } = require('../config.json');
 
 module.exports = {
@@ -44,7 +45,29 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('eyes')
-				.setDescription('Shove it in your eyes')),
+				.setDescription('shove it in your eyes')
+				.addStringOption(option =>
+					option.setName('many')
+						.setDescription('ill show you how many')
+						.setRequired(false)
+						.addChoice('Memes', 'm')
+						.addChoice('YTubes', 'yt')
+						.addChoice('DFiles', 'df')
+
+					,
+
+
+				)
+				.addStringOption(option =>
+					option.setName('whats')
+						.setDescription('forever and ever')
+						.setRequired(false)
+						// .addChoice('Stop it!', 'stop')
+						// .addChoice('Carry On my son!', 'resume')
+
+					,
+				),
+		),
 
 
 	async execute(interaction) {
@@ -94,8 +117,27 @@ module.exports = {
 			}
 		}
 		else if (subcommand === 'eyes') {
-			spit();
-			// light();
+
+			const howMany = interaction.options.getString('many');
+			if (howMany) {
+				if (howMany === 'm') {
+					numbers();
+				}
+				else if (howMany === 'yt') {
+					light();
+				}
+				else if (howMany === 'df') {
+					numbers();
+				}
+				else {
+					light();
+				}
+			}
+			else {
+				const whats = interaction.options.getString('whats');
+				long();
+			}
+
 		}
 
 		async function simpleSound(songPath) {
@@ -109,32 +151,12 @@ module.exports = {
 			interaction.followUp('BLinkingText');
 		}
 
-		async function spit() {
-			/*
-			// connect to your cluster
-			const { MongoClient } = require('mongodb').MongoClient;
-			// const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net/Bot?retryWrites=true&w=majority`;
-			const uri = `mongodb://${mongoUser}:${mongoPassword}@cluster0-shard-00-02.smyk6.mongodb.net:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
-			const client = MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true },);
-			// specify the DB's name
-			const db = client.db('Bot');
-			// execute find query
-			const items = await db.collection('Music').find({}).toArray();
-			console.log(items);
-			interaction.reply(items);
-			// close connection
-			client.close();
-*/
-			/*
-			 * Requires the MongoDB Node.js Driver
-			 * https://mongodb.github.io/node-mongodb-native
-			 */
+		async function numbers() {
 
-			const filter = {};
 			const {
 				MongoClient,
 			} = require('mongodb');
-			const uri = 'mongodb://dbUser:RPJ4Mr97o6ej3eVU@cluster0-shard-00-02.smyk6.mongodb.net:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true';
+			const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoCluster}:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
 			const client = new MongoClient(uri);
 			try {
 				await client.connect();
@@ -150,7 +172,48 @@ module.exports = {
 					// projection: { _id: 0, title: 1, imdb: 1 },
 				};
 				const cursor = music.find(query, options);
-				// print a message if no documents were found
+
+				if ((await cursor.count()) === 0) {
+					console.log('No documents found!');
+					interaction.reply('No documents found!');
+				}
+
+				// interaction.reply('All musics: ' + JSON.stringify(await cursor.toArray()));
+				interaction.reply('Number of musics: ' + await cursor.count());
+
+
+			}
+			catch (e) {
+				interaction.reply('not what you wanted: ' + e);
+			}
+			finally {
+
+				await client.close();
+			}
+		}
+
+		async function long() {
+
+			const {
+				MongoClient,
+			} = require('mongodb');
+			const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoCluster}:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
+			const client = new MongoClient(uri);
+			try {
+				await client.connect();
+				const database = client.db('Bot');
+				const music = database.collection('Music');
+				const query = {};
+				const options = {
+					// sort returned documents in ascending order by title (A->Z)
+					sort: {
+						title: 1,
+					},
+					// Include only the `title` and `imdb` fields in each returned document
+					// projection: { _id: 0, title: 1, imdb: 1 },
+				};
+				const cursor = music.find(query, options);
+
 				if ((await cursor.count()) === 0) {
 					console.log('No documents found!');
 					interaction.reply('No documents found!');

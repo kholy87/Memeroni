@@ -22,8 +22,17 @@ const Player = {
 		const audioFile = state.playlist.shift();
 		let soundPath = null;
 		let isMeme = false;
-
-		if ((audioFile.indexOf('youtu') > 0) && PlayerUtils.validURL(audioFile)) {
+		if (audioFile.readTime !== undefined && audioFile.readTime) {
+			const today = new Date();
+			const minute = today.getMinutes();
+			const hour = (today.getHours() === 0 ? 12 : today.getHours());
+			state.playlist.unshift('time/' + (today.getHours() > 11 ? 'pm' : 'am') + '.mp3');
+			state.playlist.unshift('time/' + (minute < 10 ? '0' + minute : minute) + '.mp3');
+			state.playlist.unshift('time/' + (hour > 12 ? hour - 12 : hour) + '.mp3');
+			this.playSoundFile(interaction);
+			return;
+		}
+		else if ((audioFile.indexOf('youtu') > 0) && PlayerUtils.validURL(audioFile)) {
 			soundPath = ytdl(audioFile, {
 				filter: 'audioonly',
 			});
@@ -37,6 +46,7 @@ const Player = {
 			soundPath = path.resolve('./sounds/' + audioFile);
 			isMeme = true;
 		}
+		console.log(audioFile);
 		state.currentSong = audioFile;
 		this.resource = createAudioResource(soundPath, {
 			inlineVolume: true,
@@ -45,7 +55,7 @@ const Player = {
 			},
 		});
 		if (!isAlreadyPlaying) this.resource.volume.setVolume(0.0001);
-		if (isMeme) this.resource.volume.setVolume(volume * 2);
+		if (isMeme) this.resource.volume.setVolume(volume * 3);
 		this.connection.subscribe(this.player);
 		this.player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
 		this.player.on(AudioPlayerStatus.Idle, () => {

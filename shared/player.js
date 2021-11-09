@@ -45,7 +45,7 @@ const Player = {
 			},
 		});
 		if (!isAlreadyPlaying) this.resource.volume.setVolume(0.0001);
-		if (isMeme) this.resource.volume.setVolume(volume * 1.5);
+		if (isMeme) this.resource.volume.setVolume(volume * 2);
 		this.connection.subscribe(this.player);
 		this.player.on('stateChange', (os, ns) => {console.log(`${os.status} -----> ${ns.status}`);});
 		this.player.on(AudioPlayerStatus.Idle, () => {
@@ -71,16 +71,24 @@ const Player = {
 
 	},
 	stop: async function(interaction) {
-		if (this.connection !== undefined) {
-			interaction.reply({ content: `${interaction.user.tag} has stopped Memeroni.` });
-			await this.fade(false);
-			state.isPlaying = false;
-			this.connection.destroy();
+		console.log(this.connection);
+		if (this.connection === undefined) {
+			interaction.reply({ content: 'Nothing is playing', ephemeral: true });
+			return;
 		}
+		interaction.deferReply({ content: `Stopping ${state.currentSong}`, ephemeral: true });
+		await this.fade(false);
+		state.isPlaying = false;
+		this.connection.destroy();
+		interaction.followUp({ content: `Stopped ${state.currentSong}`, ephemeral: true });
 	},
 	skip: function(interaction) {
+		if (this.player === undefined) {
+			interaction.reply({ content: 'Nothing is playing', ephemeral: true });
+			return;
+		}
 		this.player.pause();
-		interaction.reply({ content: `${interaction.user.tag} has skipped ${state.currentSong}` });
+		interaction.reply({ content: `You've skipped ${state.currentSong}`, ephemeral: true });
 		this.playSoundFile(interaction);
 	},
 	getSongInfo: async function(songUrl) {
@@ -114,10 +122,10 @@ const Player = {
 	},
 	resume: async function(interaction) {
 		if (state.playlist.length === 0) {
-			interaction.reply({ content: 'There are no queue in the playlist currently. use /yt or /sd to add to the playlist.' });
+			interaction.reply({ content: 'There are no queue in the playlist currently. use /yt or /sd to add to the playlist.', ephemeral: true });
 			return;
 		}
-		interaction.reply({ content: `${interaction.user.tag} has resumed ${state.currentSong}` });
+		interaction.reply({ content: 'Resuming the music bot', ephemeral: true });
 		this.playSoundFile(interaction, false);
 	},
 };

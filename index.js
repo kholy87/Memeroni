@@ -1,10 +1,11 @@
 // Require the necessary discord.js classes
 const fs = require('fs');
 const { Client, Intents, Collection } = require('discord.js');
-const { token } = require('./config.json');
+const { token, roleId } = require('./config.json');
+const state = require('./shared/state');
 
 // Create a new client instance
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, 'GUILD_VOICE_STATES'] });
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, 'GUILD_VOICE_STATES'] });
 
 // When the client is ready, run this code (only once)
 client.once('ready', () => {
@@ -54,6 +55,17 @@ client.on('interactionCreate', async interaction => {
 		}
 	}
 });
+
+process.on('unhandledRejection', error => {
+	console.error('Unhandled promise rejection:', error);
+});
+
+client.on('messageCreate', async message => {
+	console.log(message);
+});
+
+// Set roleId in the state
+state.roleId = roleId;
 
 // Login to Discord with your client's token
 client.login(token);

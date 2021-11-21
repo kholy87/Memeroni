@@ -124,6 +124,16 @@ module.exports = {
 					numbers();
 				}
 				else if (howMany === 'yt') {
+					const CronJob = require('cron').CronJob;
+					const d = new Date(new Date().setMinutes(50));
+					const job = new CronJob(d,
+						function() {
+							console.log('This text');
+							// await player.resume(interaction);
+
+						},
+
+					);
 					light();
 				}
 				else if (howMany === 'df') {
@@ -156,7 +166,8 @@ module.exports = {
 			const {
 				MongoClient,
 			} = require('mongodb');
-			const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoCluster}:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
+			// const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoCluster}:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
+			const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@cluster0.smyk6.mongodb.net/test`;
 			const client = new MongoClient(uri);
 			try {
 				await client.connect();

@@ -1,74 +1,102 @@
-const {	MongoClient } = require('mongodb');
+const { MongoClient } = require('mongodb');
 const { mongoUser, mongoPassword, mongoCluster } = require('../config.json');
-const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoCluster}:27017/admin?authSource=admin&replicaSet=atlas-soxeer-shard-0&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=true`;
-const client = new MongoClient(uri);
-const database = client.db('Bot');
+const uri = `mongodb+srv://${mongoUser}:${mongoPassword}@${mongoCluster}`;
+const state = require('./state');
+
+let hasLoggedConnectionFailure = false;
+
+function buildClient() {
+	return new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+}
+
+function logConnectionFailure(err) {
+	if (hasLoggedConnectionFailure) {
+		return;
+	}
+
+	hasLoggedConnectionFailure = true;
+	const reason = err && (err.code || err.message) ? `${err.code || err.message}` : 'unknown error';
+	console.warn(`MongoDB unavailable (${reason}). Continuing without database.`);
+}
+
+async function withMusicCollection(work) {
+	const client = buildClient();
+
+	try {
+		await client.connect();
+		const database = client.db('Bot');
+		const musicCollection = database.collection('Music');
+		return await work(musicCollection);
+	}
+	catch (err) {
+		logConnectionFailure(err);
+		return undefined;
+	}
+	finally {
+		await client.close().catch(() => undefined);
+	}
+}
 
 const dbHelper = {
 	getFileName: async function(meme, guildId) {
-		try {
-			console.log(guildId);
-			await client.connect();
-			const music = database.collection('Music');
+		return withMusicCollection(async musicCollection => {
 			const query = {
-				'titleLower': meme,
+				'titleLower': meme.toLowerCase(),
 				'guildId': guildId,
 			};
-			const options = {
-				sort: {
-					title: 1,
-				},
-			};
-			const cursor = music.find(query, options);
-			const cursorCount = await cursor.count();
-			if (cursorCount === 0) {
-				return undefined;
-			}
-			const cursorArray = await cursor.toArray();
-			return cursorArray[0] !== undefined ? cursorArray[0].path : undefined;
-		}
-		catch (e) {
-			console.log(e);
-		}
-		finally {
+			const result = await musicCollection.findOne(query, {
+				sort: { title: 1 },
+				projection: { path: 1 },
+			});
+			return result ? result.path : undefined;
+		});
+	},
+	loadMusicArray: async function() {
+		const results = await withMusicCollection(async musicCollection => {
+			const projection = { titleLower: 1, guildId: 1, playCount: 1 };
+			const sort = { playCount: -1 };
+			return musicCollection.find().sort(sort).project(projection).toArray();
+		});
 
-			await client.close();
+		if (!Array.isArray(results)) {
+			return [];
 		}
+
+		return results;
+	},
+	addPlayCount: async function(record) {
+		await withMusicCollection(async musicCollection => {
+			await musicCollection.findOneAndUpdate({ titleLower: record }, { $inc: { playCount: 1 } });
+		});
+
+		state.memeNames = await dbHelper.loadMusicArray();
 	},
 	importRecords: async function(records) {
-		// Replace the uri string with your MongoDB deployment's connection string.
-		async function run() {
-			try {
-				await client.connect();
-				// create a document to insert
-				const music = database.collection('Music');
-				// eslint-disable-next-line prefer-const
-				let docs = [];
-				records.forEach(async (value, key) => {
-					const doc = {
-						title: key,
-						titleLower: key.toLowerCase(),
-						path: value,
-						type: 'clip',
-						style: 'meme',
-						playCount: 0,
-						guildId: '170668549042339840',
-						createdBy: '118892076627787776',
-						createdOn: new Date(),
-						modifiedBy: '118892076627787776',
-						modifiedOn: new Date(),
-					};
-					docs.push(doc);
-				});
-				const options = { ordered: true };
-				const result = await music.insertMany(docs, options);
-				console.log(`${result.insertedCount} documents were inserted`);
-			}
-			finally {
-				await client.close();
-			}
+		const entries = records instanceof Map ? Array.from(records.entries()) : Object.entries(records);
+
+		if (entries.length === 0) {
+			return;
 		}
-		run().catch(console.dir);
+
+		const docs = entries.map(([key, value]) => ({
+			title: key,
+			titleLower: key.toLowerCase(),
+			path: value,
+			type: 'clip',
+			style: 'meme',
+			playCount: 0,
+			guildId: '170668549042339840',
+			createdBy: '118892076627787776',
+			createdOn: new Date(),
+			modifiedBy: '118892076627787776',
+			modifiedOn: new Date(),
+		}));
+
+		await withMusicCollection(async musicCollection => {
+			const options = { ordered: true };
+			const result = await musicCollection.insertMany(docs, options);
+			console.log(`${result.insertedCount} documents were inserted`);
+		});
 	},
 };
 

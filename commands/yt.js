@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const state = require('../shared/state');
 const player = require('../shared/player');
-const ytdl = require('ytdl-core');
+const PlayerUtils = require('../shared/playerUtils');
+const play = require('play-dl');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -13,43 +14,61 @@ module.exports = {
 				.setDescription('The url to a youtube video')
 				.setRequired(true)),
 	async execute(interaction) {
+		await interaction.deferReply();
 		const songUrl = interaction.options.getString('url');
-		state.playlist.push(songUrl);
+		const normalizedSongUrl = PlayerUtils.normalizeYouTubeUrl(songUrl);
+		let song = {
+			title: normalizedSongUrl,
+			description: 'YouTube audio added to queue',
+			url: normalizedSongUrl,
+			duration: 0,
+			thumbnail: 'https://i.imgur.com/5VcGqIl.png',
+		};
+
+		try {
+			const songData = await play.video_info(normalizedSongUrl);
+			song = {
+				title: songData.video_details.title,
+				description: songData.video_details.description || 'YouTube audio added to queue',
+				url: songData.video_details.url || normalizedSongUrl,
+				duration: songData.video_details.durationInSec || 0,
+				thumbnail: songData.video_details.thumbnails && songData.video_details.thumbnails.length > 0
+					? songData.video_details.thumbnails[0].url
+					: 'https://i.imgur.com/5VcGqIl.png',
+			};
+		}
+		catch (error) {
+			console.warn('Unable to load YouTube metadata, continuing with URL only.', error.message || error);
+		}
+
+		state.playlist.push(normalizedSongUrl);
 		if (!state.isPlaying) {
 			player.start(interaction);
 		}
-		const songData = await ytdl.getInfo(songUrl);
-		const song = {
-			title: songData.videoDetails.title,
-			description: songData.videoDetails.shortDescription,
-			url: songData.videoDetails.video_url,
-			duration: songData.videoDetails.duration,
-			thumbnail: songData.videoDetails.thumbnails[0].url,
-		};
-		const row = new MessageActionRow()
+		const row = new ActionRowBuilder()
 			.addComponents(
-				new MessageButton()
+				new ButtonBuilder()
 					.setCustomId('stop')
 					.setLabel('Stop')
-					.setStyle('DANGER'),
-				new MessageButton()
+					.setStyle(ButtonStyle.Danger),
+				new ButtonBuilder()
 					.setCustomId('skip')
 					.setLabel('Skip')
-					.setStyle('PRIMARY'),
-				new MessageButton()
+					.setStyle(ButtonStyle.Primary),
+				new ButtonBuilder()
 					.setCustomId('resume')
 					.setLabel('Resume')
-					.setStyle('SUCCESS'),
+					.setStyle(ButtonStyle.Success),
 			);
-		const exampleEmbed = new MessageEmbed()
+		const exampleEmbed = new EmbedBuilder()
 			.setColor('#0099ff')
-			.setTitle(`${song.title} has been added to the playlist`)
-			.setAuthor('Memeroni', 'https://i.imgur.com/qyK1FJF.png')
+			.setDescription(`${song.title} has been added to the playlist`)
+			.setAuthor({ name: 'Memeroni', iconURL: 'https://i.imgur.com/qyK1FJF.png' })
 			.setThumbnail('https://i.imgur.com/5VcGqIl.png')
 			.setImage(song.thumbnail)
 			.setTimestamp()
-			.setFooter('Memeroni', 'https://i.imgur.com/qyK1FJF.png');
-		await interaction.reply({ embeds: [exampleEmbed], components: [row] });
+			.setFooter({ text: 'Memeroni', iconURL: 'https://i.imgur.com/qyK1FJF.png' });
+		await interaction.editReply({ embeds: [exampleEmbed], components: [row] });
 	},
 	async executeButton(interaction) {
 		const customId = interaction.customId;

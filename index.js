@@ -1,48 +1,71 @@
 // Require the necessary discord.js classes
 const fs = require('fs');
-const { Client, Intents, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, MessageFlags } = require('discord.js');
 const { token, roleId } = require('./config.json');
 const state = require('./shared/state');
+const dbHelper = require('./shared/db');
+
+function isIgnorableInteractionError(error) {
+	return error && (error.code === 10062 || error.code === 40060);
+}
 
 // Create a new client instance
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, 'GUILD_VOICE_STATES'] });
+state.client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates] });
 
 // When the client is ready, run this code (only once)
-client.once('ready', () => {
+state.client.once('clientReady', async () => {
 	console.log('Ready!');
+	// Load initial music title's into array
+	state.memeNames = await dbHelper.loadMusicArray();
+	if (Array.isArray(state.memeNames) && state.memeNames.length > 0) {
+		console.log('Loaded Memes from DB');
+	}
+	else {
+		console.log('DB unavailable or no memes found; continuing with in-memory commands only.');
+	}
 });
 
 // Reconnecting
-client.once('reconnecting', () => {
+state.client.once('reconnecting', () => {
 	console.log('Reconnecting!');
 });
 
 // load commands
-client.commands = new Collection();
+state.client.commands = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	// Set a new item in the Collection
 	// With the key as the command name and the value as the exported module
-	client.commands.set(command.data.name, command);
+	state.client.commands.set(command.data.name, command);
 }
 
 // Reply to slash commands
-client.on('interactionCreate', async interaction => {
+state.client.on('interactionCreate', async interaction => {
 	if (interaction.isButton()) {
-		const command = client.commands.get(interaction.message.interaction.commandName);
+		const command = state.client.commands.get(interaction.message.interaction.commandName);
 		if (!command) return;
 		try {
 			await command.executeButton(interaction);
 		}
 		catch (error) {
+			if (isIgnorableInteractionError(error)) {
+				console.warn(`Ignoring Discord interaction error code ${error.code} for button.`);
+				return;
+			}
+
 			console.error(error);
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			if (interaction.replied || interaction.deferred) {
+				await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral }).catch(() => undefined);
+			}
+			else {
+				await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral }).catch(() => undefined);
+			}
 		}
 	}
-	if (interaction.isCommand()) {
-		const command = client.commands.get(interaction.commandName);
+	if (interaction.isChatInputCommand()) {
+		const command = state.client.commands.get(interaction.commandName);
 
 		if (!command) return;
 
@@ -50,8 +73,30 @@ client.on('interactionCreate', async interaction => {
 			await command.execute(interaction);
 		}
 		catch (error) {
+			if (isIgnorableInteractionError(error)) {
+				console.warn(`Ignoring Discord interaction error code ${error.code} for command ${interaction.commandName}.`);
+				return;
+			}
+
 			console.error(error);
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			if (interaction.replied || interaction.deferred) {
+				await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral }).catch(() => undefined);
+			}
+			else {
+				await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral }).catch(() => undefined);
+			}
+		}
+	}
+	if (interaction.isAutocomplete()) {
+		const command = state.client.commands.get(interaction.commandName);
+
+		if (!command) return;
+
+		try {
+			await command.stringSearch(interaction);
+		}
+		catch (error) {
+			console.error(error);
 		}
 	}
 });
@@ -60,13 +105,15 @@ process.on('unhandledRejection', error => {
 	console.error('Unhandled promise rejection:', error);
 });
 
-client.on('messageCreate', async message => {
-	console.log(message);
+state.client.on('error', error => {
+	console.error('Discord client error:', error);
 });
+
+// Set interval for Grandfather Clock
+// player.grandfatherClockInterval = setInterval(player.grandfatherClockFn, 15000);
 
 // Set roleId in the state
 state.roleId = roleId;
 
 // Login to Discord with your client's token
-client.login(token);
-
+state.client.login(token);

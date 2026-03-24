@@ -1,0 +1,74 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install latest dependencies",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Check outdated packages",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"outdated"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Lint on latest ESLint",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Lint after flat config migration",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Install eslint flat config package",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install",
+				"-D",
+				"@eslint/js"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run lint with new config",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Final lint check",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false
+		}
+	]
+}
